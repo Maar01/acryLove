@@ -24,6 +24,7 @@ class LoginTest extends DuskTestCase
                     ->type('#m_login_password', 'P@ssw0rd')
                 ->pause(3000)->driver->findElement(WebDriverBy::xpath('//*[@id="u_0_4"]/button'))
                 ->click('login');
+
                 $browser->pause(5000)
                 ->screenshot('lastResultLogin' . date('Y-m-d') . '_' .random_int(1, 1000));
         });
