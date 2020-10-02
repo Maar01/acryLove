@@ -1,18 +1,14 @@
 <?php
 
-namespace Tests\Browser;
 
-use App\FUser;
-use Facebook\WebDriver\Chrome\ChromeOptions;
-use Facebook\WebDriver\Remote\DesiredCapabilities;
-use Facebook\WebDriver\Remote\RemoteWebDriver;
+namespace App\Services;
+
 use Facebook\WebDriver\WebDriverBy;
 use Laravel\Dusk\Browser;
-use Tests\DuskTestCase;
 
-class LoginTest extends DuskTestCase
+class Fbrowser extends Browser
 {
-    public const URL_PROFILES_TO_ADD = [
+    protected const URL_PROFILES_TO_ADD = [
         'https://m.facebook.com/juanmanuel.hernandeziruegas',
         'https://m.facebook.com/karla.avilaruiz.3',
         'https://m.facebook.com/profile.php?id=100006355393380',
@@ -40,7 +36,7 @@ class LoginTest extends DuskTestCase
         'https://m.facebook.com/kamila.nails.50',
     ];
 
-    public const URL_TO_LIKE = [
+    protected const URL_TO_LIKE = [
         'https://m.facebook.com/GCNailsOficial/',
         'https://m.facebook.com/gcnailsgdl/',
         'https://m.facebook.com/orangenailsgdl/',
@@ -50,97 +46,39 @@ class LoginTest extends DuskTestCase
 
     public $profileUrl = 'https://m.facebook.com/profile.php';
 
-    protected function driver()
-    {
-        $options = (new ChromeOptions)->addArguments([
-            //'--disable-gpu',
-            //'--headless',
-            '--window-size=1920,1080',
-        ]);
-
-        return RemoteWebDriver::create(
-            'http://localhost:9515', DesiredCapabilities::chrome()->setCapability(
-            ChromeOptions::CAPABILITY, $options
-        )
-        );
-    }
-
-    /**
-     * A Dusk test example.
-     *
-     * @return void
-     */
-    public function testExample()
-    {
-        $fbUsers = FUser::all()->sortByDesc('id');
-        $fbUsers->each(function ($fbUser, $index) {
-            $browser = new Browser($this->driver());
-            //$this->browse(function (Browser $browser) use ($fbUser) {
-            try {
-                $browser->visit('https://m.facebook.com/')
-                    ->pause(1000)
-                    ->type('#m_login_email', $fbUser->email)
-                    ->pause(3000)
-                    ->type('#m_login_password', $fbUser->f_password)
-                    ->pause(3000)
-                    ->driver->findElement(WebDriverBy::xpath('//*[@id="u_0_4"]/button'))
-                    ->click('login');
-                $browser->pause('5000');
-
-                $this->dealLoginOneTap($browser);
-                $browser->pause('5000');
-                $this->dealAddPhoneNumber($browser);
-                $browser->pause('2000');
-                $this->addFriendFromList($browser, $index); //make an implementation to see if the user already was added as a friend
-                $this->addFriendSetUpAccount($browser);
-                $this->likeAcryLove($browser);
-                //$this->uploadProfilePicture($browser);
-
-            } catch (Exception $e) {
-                //$this->captureFailuresFor(collect($browser));
-                \Log::debug("Problem with user $fbUser->email: {$e->getMessage()} - {$e->getTraceAsString()}");
-                $browser->screenshot($fbUser->id.'_Exception_' . $this->randomStringWithDate());
-            } catch (\Throwable $t) {
-                //$this->captureFailuresFor(collect($browser));
-                \Log::debug("Problem with user $fbUser->email: {$t->getMessage()} - {$t->getTraceAsString()}");
-                $browser->screenshot($fbUser->id.'_Throwable_' . $this->randomStringWithDate());
-            }
-            //$browser->storeConsoleLogsFor(collect($browser));
-            $this->logOutProfile($browser);
-            //implements log out
-            $browser->quit();
-            //});
-        });
-    }
-
-    public function dealAddPhoneNumber(Browser $browser) : void
+    public function dealAddPhoneNumber()
     {
         $nextXpath = '/html/body/div[1]/div/div[2]/div/div[2]/a';
-        $countElement = $browser->driver->findElements(WebDriverBy::xpath($nextXpath));
+        $countElement = $this->driver->findElements(WebDriverBy::xpath($nextXpath));
 
         if (count($countElement)) {
-            $browser->clickAtXPath($nextXpath);
+            $this->clickAtXPath($nextXpath);
         }
+
+        return $this;
     }
 
-    private function dealLoginOneTap(Browser $browser) : void
+    public function dealLoginOneTap()
     {
         $okXpath = '/html/body/div[1]/div/div[2]/div/div[1]/div/div/div[3]/div[2]/form/div/button';
-        $okElement = $browser->driver->findElements(WebDriverBy::xpath($okXpath));
+        $okElement = $this->driver->findElements(WebDriverBy::xpath($okXpath));
         //$notNowXpath = '//*[@id="root"]/div[1]/div/div/div[3]/div[1]/div/div/a';
         if (count($okElement)) {
-            $browser->clickAtXPath($okXpath);
+            $this->clickAtXPath($okXpath);
         }
+
+        return $this;
     }
 
-    public function logOutProfile(Browser $browser)
+    public function logOutProfile()
     {
-        $browser->visit('https://m.facebook.com/')->pause('3000');
-        $browser->clickAtXPath('/html/body/div[1]/div/div[2]/div/div[1]/div[6]/div/a')
+        $this->visit('https://m.facebook.com/')->pause('3000');
+        $this->clickAtXPath('/html/body/div[1]/div/div[2]/div/div[1]/div[6]/div/a')
             ->pause('2000')
             ->clickAtXPath('/html/body/div[1]/div/div[2]/div/div[1]/div[6]/div/div/div[1]/div/div/div/div/div/div[2]/div/div[7]/a')
             ->pause('2000');
-            //->clickAtXPath('/html/body/div[1]/div/div[8]/div[1]/div/div[2]/div/div/form/button');
+        //->clickAtXPath('/html/body/div[1]/div/div[8]/div[1]/div/div[2]/div/div/form/button');
+        return $this;
     }
 
     /**
@@ -149,29 +87,32 @@ class LoginTest extends DuskTestCase
      * @version 07/09/2020
      * @author Mario Avila W.I.P.
      */
-    public function uploadProfilePicture(Browser $socialBrowser)
+    public function uploadProfilePicture()
     {
-        $socialBrowser->visit($this->profileUrl)->pause('2000')
+        $this->visit($this->profileUrl)->pause('2000')
             ->clickAtXPath('/html/body/div[1]/div/div[4]/div/div/div[1]/div/div[1]/div[2]/a')
             ->click('#nuxChoosePhotoButton')
             ->attach('#nuxPicFileInput', 'caguama_paz.jpg')
             ->waitForText('Set as Profile Picture')
             ->clickAtXPath('/html/body/div[2]/div[2]/div[2]/div/div[1]/div/div[3]/form/div[2]/div/div/button[1]')
-        ->pause('5000')
-        ->screenshot('upload_profile_picture_' . $this->randomStringWithDate());
+            ->pause('5000')
+            ->screenshot('upload_profile_picture_' . $this->randomStringWithDate());
+        return $this;
     }
 
-    public function checkLanguage(Browser $socialBrowser)
+    public function checkLanguage()
     {
-        $socialBrowser->visit('https://m.facebook.com/language.php');//WIP.
+        $this->visit('https://m.facebook.com/language.php');//WIP.
+        return $this;
     }
 
-    private function randomStringWithDate() : string
+    //this should be out this class
+    public function randomStringWithDate() : string
     {
         return date('Y-m-d') . '_' .random_int(1, 1000);
     }
 
-    private function addFriendFromList(Browser $browser, int $index) : void
+    public function addFriendFromList(int $index)
     {
         $profilesToAdd = count(self::URL_PROFILES_TO_ADD);
         $index = $index > $profilesToAdd ? ($index - $profilesToAdd) : $index;
@@ -179,32 +120,32 @@ class LoginTest extends DuskTestCase
         dump(self::URL_PROFILES_TO_ADD[$index] . " {$index} this is");
         $urlToVisit = self::URL_PROFILES_TO_ADD[$index];
         if ($urlToVisit !== '') {
-            $browser->visit($urlToVisit)
+            $this->visit($urlToVisit)
                 ->pause('2000')
                 ->clickAtXPath('/html/body/div[1]/div/div[4]/div/div[1]/div/div[1]/div/div[3]/div/div[1]/a')
                 ->pause('2000');
 
-            $this->dealPeopleYouMayKnow($browser);
-            $browser->pause('2000');
-            $browser->screenshot('friend_added_' . $this->randomStringWithDate());
+            $this->dealPeopleYouMayKnow();
+            $this->pause('2000');
+            $this->screenshot('friend_added_' . $this->randomStringWithDate());
 
-            $browser->pause('2000');
+            $this->pause('2000');
         }
-
+        return $this;
     }
 
-    private function addFriend(Browser $browser, string $searchName = '')
+    public function addFriend(string $searchName = '')
     {
-        $browser->visit('https://m.facebook.com/maarart.az')
+        $this->visit('https://m.facebook.com/maarart.az')
             ->pause('2000')
             ->clickAtXPath('/html/body/div[1]/div/div[4]/div/div[1]/div/div[1]/div/div[3]/div/div[1]/a')
             ->pause('2000');
 
-        $this->dealPeopleYouMayKnow($browser);
-        $browser->pause('2000');
-        $browser->screenshot('friend_added_' . $this->randomStringWithDate());
+        $this->dealPeopleYouMayKnow();
+        $this->pause('2000');
+        $this->screenshot('friend_added_' . $this->randomStringWithDate());
 
-        $browser->pause('2000');
+        $this->pause('2000');
 
         /*$searchName = urlencode('alan josue cadena');
         $addFriendUrl = "https://m.facebook.com/search/top/?q=$searchName&ref=content_filter&source=typeahead";
@@ -212,28 +153,28 @@ class LoginTest extends DuskTestCase
             ->click('#main-search-input')
             ->visit($addFriendUrl)
             ->pause('2000');*/
-
+        return $this;
     }
 
     /**
      * @version 02/09/2020
      * @author Mario Avila
      */
-    private function addFriendSetUpAccount(Browser $socialBrowser): void
+    public function addFriendSetUpAccount()
     {
-        if (count($socialBrowser->driver->findElements(WebDriverBy::xpath('/html/body/div[1]/div/div[4]/div/div[5]/div[4]/div/div[2]/div/div[1]/footer/div/a')))) {
-            $socialBrowser->clickAtXPath('/html/body/div[1]/div/div[4]/div/div[5]/div[4]/div/div[2]/div/div[1]/footer/div/a');
+        if (count($this->driver->findElements(WebDriverBy::xpath('/html/body/div[1]/div/div[4]/div/div[5]/div[4]/div/div[2]/div/div[1]/footer/div/a')))) {
+            $this->clickAtXPath('/html/body/div[1]/div/div[4]/div/div[5]/div[4]/div/div[2]/div/div[1]/footer/div/a');
         } else {
-            $socialBrowser->visit('https://m.facebook.com/friends/center/requests/');
+            $this->visit('https://m.facebook.com/friends/center/requests/');
         }
 
-        $socialBrowser->pause('3000') //
-            ->clickAtXPath('/html/body/div[1]/div/div[4]/div/div[2]/div[4]/div[1]/div[2]/div/div[3]/div[1]/div/div[1]/a/button')
+        $this->pause('3000') //
+        ->clickAtXPath('/html/body/div[1]/div/div[4]/div/div[2]/div[4]/div[1]/div[2]/div/div[3]/div[1]/div/div[1]/a/button')
             ->pause('3000');
 
         // confirm i know that person
-        if (count($socialBrowser->driver->findElements(WebDriverBy::xpath('/html/body/div[1]/div[2]/div[1]/div/div[2]/div/div[3]/div/div[2]/form/button')))) {
-            $socialBrowser->clickAtXPath('/html/body/div[1]/div[2]/div[1]/div/div[2]/div/div[3]/div/div[2]/form/button');
+        if (count($this->driver->findElements(WebDriverBy::xpath('/html/body/div[1]/div[2]/div[1]/div/div[2]/div/div[3]/div/div[2]/form/button')))) {
+            $this->clickAtXPath('/html/body/div[1]/div[2]/div[1]/div/div[2]/div/div[3]/div/div[2]/form/button');
         }
 
         /*$socialBrowser->clickAtXPath('/html/body/div[1]/div/div[4]/div/div[2]/div[4]/div[2]/div[2]/div/div[3]/div[1]/div/div[1]/a/button')
@@ -241,20 +182,26 @@ class LoginTest extends DuskTestCase
             ->clickAtXPath('/html/body/div[1]/div/div[4]/div/div[2]/div[4]/div[4]/div[2]/div/div[3]/div[1]/div/div[1]/a/button')
             ->pause('3000')
             ->clickAtXPath('/html/body/div[1]/div/div[4]/div/div[2]/div[4]/div[7]/div[2]/div/div[3]/div[1]/div/div[1]/a/button');*/
+
+        return $this;
     }
 
-    private function dealPeopleYouMayKnow(Browser $browser)
+    public function dealPeopleYouMayKnow()
     {
         $okXpath = '/html/body/div[1]/div[2]/div[1]/div/div[2]/div/div[4]/button';
-        if (count($browser->driver->findElements(WebDriverBy::xpath($okXpath)))) {
-            $browser->clickAtXPath($okXpath);
+        if (count($this->driver->findElements(WebDriverBy::xpath($okXpath)))) {
+            $this->clickAtXPath($okXpath);
         }
+
+        return $this;
     }
 
-    private function likeAcryLove(Browser $socialBrowser)
+    public function likeAcryLove()
     {
-        $socialBrowser->visit('https://m.facebook.com/ACRYLOVEoficial/')->pause('3000');
-        $socialBrowser->clickAtXPath('/html/body/div[1]/div/div[4]/div/div/div/div[1]/div[2]/div[2]/div/div/div[3]');
+        $this->visit('https://m.facebook.com/ACRYLOVEoficial/')->pause('3000');
+        $this->clickAtXPath('/html/body/div[1]/div/div[4]/div/div/div/div[1]/div[2]/div[2]/div/div/div[3]');
+
+        return $this;
     }
 
     /** To add friends based on href starts with /a/mobile/friends/profile_add_friend.php m.facebook.com
